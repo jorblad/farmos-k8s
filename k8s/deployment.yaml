@@ -31,19 +31,22 @@ spec:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: farmos-db-secret
-              key: database_url
+              name: farmos-db-app
+              key: uri
         - name: FARMOS_DB_NAME
-          value: "farmos"
+          valueFrom:
+            secretKeyRef:
+              name: farmos-db-app
+              key: dbname
         - name: FARMOS_DB_USER
           valueFrom:
             secretKeyRef:
-              name: farmos-db-secret
+              name: farmos-db-app
               key: username
         - name: FARMOS_DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: farmos-db-secret
+              name: farmos-db-app
               key: password
         - name: FARMOS_DB_HOST
           value: "farmos-db"
