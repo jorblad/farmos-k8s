@@ -1,0 +1,14 @@
+# Ignore Composer-generated files.
+.editorconfig
+.gitattributes
+project/vendor
+project/web/*
+
+# farmOS uses this to store OAuth2 keys.
+keys
+
+# This creates an exception for ./web/modules/custom, which can be used for
+# custom module code that is part of this repository.
+!project/web/modules
+project/web/modules/*
+!project/web/modules/custom

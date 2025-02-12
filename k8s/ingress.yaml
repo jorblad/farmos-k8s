@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: farmos-ingress
+  namespace: farmos
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  rules:
+  - host: farm.k8s.sj-tech.se
+    http:
+      paths:
+      - backend:
+          service:
+            name: farmos-svc
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - farm.k8s.sj-tech.se
+    secretName: farm-k8s-sj-tech-se-tls

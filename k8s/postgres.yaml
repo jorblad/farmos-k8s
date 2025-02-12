@@ -1,0 +1,29 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: farmos-db
+  namespace: farmos
+spec:
+  instances: 2 # Number of PostgreSQL replicas
+  enableSuperuserAccess: true
+  managed:
+    roles:
+    - name: farmos
+      superuser: true
+      login: true
+
+    - name: app
+      superuser: true
+      login: true
+
+  storage:
+    pvcTemplate:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: longhorn
+  monitoring:
+    enablePodMonitor: true
+  primaryUpdateStrategy: unsupervised
