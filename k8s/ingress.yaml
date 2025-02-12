@@ -17,6 +17,8 @@ spec:
             name: farmos-svc
             port:
               number: 80
+        path: /
+        pathType: Prefix
   tls:
   - hosts:
     - farm.k8s.sj-tech.se
