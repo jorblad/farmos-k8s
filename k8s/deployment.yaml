@@ -31,8 +31,8 @@ spec:
           httpGet:
             path: /
             port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 5
+          initialDelaySeconds: 120
+          periodSeconds: 10
         env:
         - name: DATABASE_URL
           valueFrom:
