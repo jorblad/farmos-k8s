@@ -1,5 +1,5 @@
 # Inherit from the upsteam farmOS 3.x image.
-FROM farmos/farmos:3.3.3
+FROM farmos/farmos:3.4.2
 
 # Install `jq` to help in extracting the farmOS version below.
 RUN apt-get update && apt-get install -y jq
