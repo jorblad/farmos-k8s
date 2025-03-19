@@ -27,6 +27,12 @@ spec:
           requests:
             memory: "256Mi"
             cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
         env:
         - name: DATABASE_URL
           valueFrom:
