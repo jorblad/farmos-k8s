@@ -15,6 +15,27 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    # Add PHP and Composer steps here
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    - name: Install Composer and update lock file
+      run: |
+        cd project
+        composer install
+        composer update --lock
+
+    # (Optional) Commit updated composer.lock if you want to push it back to the repo
+    - name: Commit updated composer.lock
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add project/composer.lock
+        git commit -m "Update composer.lock" || echo "No changes to commit"
+        git push || echo "No changes to push"
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
 
