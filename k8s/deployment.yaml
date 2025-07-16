@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: farmos
-        image: jorblad/farmos-k8s:latest
+        image: jorblad/farmos-k8s:v3.4.5_project
         ports:
         - containerPort: 80
         resources:
