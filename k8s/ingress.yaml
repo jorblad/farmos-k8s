@@ -9,7 +9,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
   rules:
-  - host: farm.k8s.sj-tech.se
+  - host: farm.jorblad.se
     http:
       paths:
       - backend:
@@ -21,5 +21,5 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - farm.k8s.sj-tech.se
-    secretName: farm-k8s-sj-tech-se-tls
+    - farm.jorblad.se
+    secretName: farm-jorblad-se-tls
