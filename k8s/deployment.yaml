@@ -15,6 +15,41 @@ spec:
       labels:
         app: farmos
     spec:
+      initContainers:
+      - name: farmos-init
+        image: jorblad/farmos-k8s:v3.4.5_project
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            cd /opt/drupal/web && \
+            drush updb --yes && \
+            drush cr
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: farmos-db-app
+              key: uri
+        - name: FARMOS_DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: farmos-db-app
+              key: dbname
+        - name: FARMOS_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: farmos-db-app
+              key: username
+        - name: FARMOS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: farmos-db-app
+              key: password
+        - name: FARMOS_DB_HOST
+          value: "farmos-db"
+        volumeMounts:
+        - mountPath: /opt/drupal/web/sites
+          name: farmos-sites-volume
       containers:
       - name: farmos
         image: jorblad/farmos-k8s:v3.4.5_project
