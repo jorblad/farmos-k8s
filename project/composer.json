@@ -27,7 +27,8 @@
         "drupal/farm_map_custom_layers": "^1.2",
         "drupal/farm_map_google": "^1.0",
         "drupal/farm_crop_plan": "^3.0@alpha",
-        "drupal/oauth_login_oauth2": "^3.0"
+        "drupal/oauth_login_oauth2": "^3.0",
+        "drupal/farm_project_plan": "^1.1"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
