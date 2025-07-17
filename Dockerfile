@@ -11,6 +11,9 @@ RUN rm -r /var/farmOS && mkdir /var/farmOS
 # Copy composer.json and composer.lock into the image.
 COPY project/composer.json /var/farmOS/composer.json
 COPY project/composer.lock /var/farmOS/composer.lock
+# Add permission fix script to the image.
+COPY project/drupal_fix_permissions.sh /var/farmOS/web/drupal_fix_permissions.sh
+RUN chmod +x /var/farmOS/web/drupal_fix_permissions.sh
 
 # Build the farmOS codebase with Composer as the www-data user in /var/farmOS
 # with the --no-dev flag.

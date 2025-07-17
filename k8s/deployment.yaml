@@ -18,12 +18,13 @@ spec:
       initContainers:
       - name: farmos-init
         image: jorblad/farmos-k8s:v3.4.5_project
-        command: ["/bin/sh", "-c"]
+        command: [ "/bin/sh", "-c" ]
         args:
-          - |
-            cd /opt/drupal/web && \
-            drush updb --yes && \
-            drush cr
+        - |
+          cd /opt/drupal/web && \
+          ./drupal_fix_permissions.sh -u=www-data && \
+          drush updb --yes && \
+          drush cr
         env:
         - name: DATABASE_URL
           valueFrom:
