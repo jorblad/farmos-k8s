@@ -53,7 +53,7 @@ spec:
           name: farmos-sites-volume
       containers:
       - name: farmos
-        image: jorblad/farmos-k8s:v3.4.5_project
+        image: jorblad/farmos-k8s:v3.4.5.3
         ports:
         - containerPort: 80
         resources:
