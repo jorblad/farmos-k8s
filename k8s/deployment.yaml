@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
       - name: farmos-init
-        image: jorblad/farmos-k8s:v3.4.5_project
+        image: jorblad/farmos-k8s:v3.4.5.3
         command: [ "/bin/sh", "-c" ]
         args:
         - |
