@@ -26,3 +26,6 @@ RUN sed -i "s|version: 3.4.5|version: $(jq -r '.packages[] | select(.name == "fa
 
 # Copy the farmOS codebase into /opt/drupal.
 RUN rm -r /opt/drupal && cp -rp /var/farmOS /opt/drupal
+
+# Choose the production php.ini
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
