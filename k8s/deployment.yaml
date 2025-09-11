@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
       - name: farmos-init
-        image: jorblad/farmos-k8s:v3.4.5.3
+        image: jorblad/farmos-k8s:v3.4.5.4
         command: [ "/bin/sh", "-c" ]
         args:
         - |
@@ -53,7 +53,7 @@ spec:
           name: farmos-sites-volume
       containers:
       - name: farmos
-        image: jorblad/farmos-k8s:v3.4.5.3
+        image: jorblad/farmos-k8s:v3.4.5.4
         ports:
         - containerPort: 80
         resources:
