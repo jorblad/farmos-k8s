@@ -3,7 +3,33 @@
   "extends": [
     "config:recommended"
   ],
+  "kubernetes": {
+    "fileMatch": [
+      "^k8s/.*\\.ya?ml$"
+    ]
+  },
   "argocd": {
-    "managerFilePatterns": ["/k8s/.+\\.yaml$/"]
-  }
+    "managerFilePatterns": [
+      "^k8s/.+\\.ya?ml$"
+    ]
+  },
+  "regexManagers": [
+    {
+      "fileMatch": ["^k8s/.*\\.ya?ml$"],
+      "matchStrings": [
+        "image:\\s*([^:\\s]+)(?::([^\\s]+))?"
+      ],
+      "depNameTemplate": "{{match1}}",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["kubernetes", "regex"],
+      "matchDatasources": ["docker"],
+      "groupName": "k8s-images",
+      "automerge": false
+    }
+  ]
 }
