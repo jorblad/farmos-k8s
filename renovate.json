@@ -4,8 +4,8 @@
     "config:recommended"
   ],
   "kubernetes": {
-    "fileMatch": [
-      "^k8s/.*\\.ya?ml$"
+    "managerFilePatterns": [
+      "/^k8s/.*\\.ya?ml$/"
     ]
   },
   "argocd": {
@@ -13,9 +13,12 @@
       "^k8s/.+\\.ya?ml$    "
     ]
   },
-  "regexManagers": [
+  "customManagers": [
     {
-      "fileMatch": ["^k8s/.*\\.ya?ml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^k8s/.*\\.ya?ml$/"
+      ],
       "matchStrings": [
         "image:\\s*([^:\\s]+)(?::([^\\s]+))?"
       ],
@@ -27,8 +30,13 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["kubernetes", "regex"],
-      "matchDatasources": ["docker"],
+      "matchManagers": [
+        "kubernetes",
+        "custom.regex"
+      ],
+      "matchDatasources": [
+        "docker"
+      ],
       "groupName": "k8s-images",
       "automerge": false
     }
