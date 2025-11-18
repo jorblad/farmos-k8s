@@ -10,18 +10,19 @@
   },
   "argocd": {
     "managerFilePatterns": [
-      "^k8s/.+\\.ya?ml$"
+      "^k8s/.+\\.ya?ml$    "
     ]
   },
   "regexManagers": [
     {
       "fileMatch": ["^k8s/.*\\.ya?ml$"],
       "matchStrings": [
-        "image:\\\\s*([^:\\\\s]+)(?::([^\\\\s]+))?"
+        "image:\\s*([^:\\s]+)(?::([^\\s]+))?"
       ],
       "depNameTemplate": "{{match1}}",
       "datasourceTemplate": "docker",
-      "versioningTemplate": "docker"
+      "versioningTemplate": "docker",
+      "currentValueTemplate": "{{match2}}"
     }
   ],
   "packageRules": [
