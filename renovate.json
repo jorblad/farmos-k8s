@@ -17,7 +17,7 @@
     {
       "fileMatch": ["^k8s/.*\\.ya?ml$"],
       "matchStrings": [
-        "image:\\s*([^:\\s]+)(?::([^\\s]+))?"
+        "image:\\\\s*([^:\\\\s]+)(?::([^\\\\s]+))?"
       ],
       "depNameTemplate": "{{match1}}",
       "datasourceTemplate": "docker",
