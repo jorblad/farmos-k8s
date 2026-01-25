@@ -23,7 +23,7 @@
         "drupal/farmos_asset_link": "^1.0@alpha",
         "drupal/smtp": "^1.4",
         "drupal/gin_login": "^2.1",
-        "drupal/farm_organic": "^2.1",
+        "drupal/farm_organic": "^3.0",
         "drupal/farm_map_custom_layers": "^1.2",
         "drupal/farm_map_google": "^1.0",
         "drupal/farm_crop_plan": "^3.0@alpha",
