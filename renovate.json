@@ -24,7 +24,7 @@
       ],
       "depNameTemplate": "{{match1}}",
       "datasourceTemplate": "docker",
-      "versioningTemplate": "docker",
+      "versioningTemplate": "loose",
       "currentValueTemplate": "{{match2}}"
     }
   ],
