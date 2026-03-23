@@ -1,3 +1,5 @@
+[![Build and Push Docker Image](https://github.com/jorblad/farmos-k8s/actions/workflows/docker-image.yml/badge.svg)](https://github.com/jorblad/farmos-k8s/actions/workflows/docker-image.yml)
+
 # farmos-k8s
 
 This project sets up a Docker image for farmOS with additional modules, designed to run on Kubernetes.
@@ -11,7 +13,6 @@ The following modules are included in this setup:
 - `gin_login`
 - `farm_organic`
 - `farm_map_custom_layers`
-- `farm_map_google`
 - `farm_crop_plan`
 - `oauth_login_oauth2`
 
