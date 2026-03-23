@@ -8,9 +8,11 @@ RUN apt-get update && apt-get install -y jq
 # Create a fresh /var/farmOS directory.
 RUN rm -r /var/farmOS && mkdir /var/farmOS
 
-# Copy composer.json and composer.lock into the image.
+# Copy composer.json into the image. composer.lock may not be committed
+# for release tags, so we avoid requiring it here and let the image build
+# run `composer install` inside the container where the correct PHP
+# runtime and extensions are available.
 COPY project/composer.json /var/farmOS/composer.json
-COPY project/composer.lock /var/farmOS/composer.lock
 # Add permission fix script to the image.
 COPY project/drupal_fix_permissions.sh /var/farmOS/web/drupal_fix_permissions.sh
 RUN chmod +x /var/farmOS/web/drupal_fix_permissions.sh
