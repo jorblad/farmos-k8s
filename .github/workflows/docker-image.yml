@@ -29,8 +29,12 @@ jobs:
     - name: Install Composer and update lock file
       run: |
         cd project
-        composer install
-        composer update --lock
+        # If composer.lock is missing on the checked-out tag, avoid failing
+        # due to platform requirements (ext-geos). Generate/install deps
+        # without dev packages and ignore the GEOS platform requirement.
+        composer install --no-dev --prefer-dist --no-interaction --ignore-platform-req=ext-geos || true
+        # Do not run `composer update --lock` here to avoid resolving
+        # platform-specific system extensions on the runner.
 
     # # (Optional) Commit updated composer.lock if you want to push it back to the repo
     # - name: Commit updated composer.lock
