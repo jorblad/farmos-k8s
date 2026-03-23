@@ -15,9 +15,14 @@ spec:
       labels:
         app: farmos
     spec:
+      securityContext:
+        fsGroup: 33
       initContainers:
       - name: farmos-init
         image: jorblad/farmos-k8s:v4.0.0.1
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
         command: [ "/bin/sh", "-c" ]
         args:
         - |
@@ -54,6 +59,9 @@ spec:
       containers:
       - name: farmos
         image: jorblad/farmos-k8s:v4.0.0.1
+        securityContext:
+          runAsUser: 33
+          runAsGroup: 33
         ports:
         - containerPort: 80
         resources:
