@@ -27,6 +27,8 @@ spec:
         args:
         - |
           cd /opt/drupal/web && \
+          drush cdel core.extension module.farm_fieldkit_test -y || true && \
+          drush en farm_fieldkit -y || true && \
           ./drupal_fix_permissions.sh -u=www-data && \
           drush updb --yes && \
           drush cr
