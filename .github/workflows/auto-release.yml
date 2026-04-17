@@ -18,10 +18,17 @@ name: Auto-release on PR label
 #      c. Publish a GitHub Release for that tag (which in turn triggers the
 #         Docker build in docker-image.yml via the `release: published` event).
 #
+# IMPORTANT — SAME-REPO PRs ONLY
+# --------------------------------
+# This workflow uses the `pull_request` event (not `pull_request_target`).
+# PRs that originate from forks receive a read-only GITHUB_TOKEN, so the
+# tag push and `gh release create` steps will fail for fork-based PRs.
+# Only PRs from branches within this repository are supported.
+#
 # REQUIRED PERMISSIONS
 # ---------------------
 # The default GITHUB_TOKEN is used with `contents: write` so no extra secrets
-# are needed.
+# are needed for same-repo PRs.
 
 on:
   pull_request:
@@ -42,6 +49,13 @@ jobs:
         contains(github.event.pull_request.labels.*.name, 'release:major')
       )
     runs-on: ubuntu-latest
+    # Serialize all auto-release runs to prevent a race where two release-
+    # labelled PRs merged in quick succession compute the same NEW_TAG from
+    # the same LATEST_TAG.  Setting cancel-in-progress: false ensures both
+    # runs complete sequentially rather than one being dropped.
+    concurrency:
+      group: auto-release
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
@@ -71,7 +85,10 @@ jobs:
           echo "Bump type: $BUMP"
 
           # ── Find latest semver tag ─────────────────────────────────────────
-          LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1 || true)
+          # Use a strict regex so pre-release suffixes (e.g. v1.2.3-alpha) or
+          # extra dot-segments (e.g. v1.2.3.4) are excluded, preventing
+          # non-numeric PATCH values from breaking the arithmetic below.
+          LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -m1 -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
           if [ -z "$LATEST_TAG" ]; then
             LATEST_TAG="v0.0.0"
           fi
@@ -92,6 +109,12 @@ jobs:
 
           NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
           echo "New tag: $NEW_TAG"
+
+          # ── Guard against races: abort if the tag already exists ───────────
+          if git fetch origin "refs/tags/${NEW_TAG}" 2>/dev/null; then
+            echo "Tag ${NEW_TAG} already exists on the remote — skipping release to avoid a duplicate." >&2
+            exit 0
+          fi
 
           # ── Create annotated tag ───────────────────────────────────────────
           git config user.name "github-actions[bot]"
