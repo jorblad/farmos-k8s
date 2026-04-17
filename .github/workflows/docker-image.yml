@@ -110,8 +110,8 @@ jobs:
             echo "Invalid Docker tag '${TAG}': must not contain '/'." >&2
             exit 1
           fi
-          if ! [[ "${TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.+-]*$ ]]; then
-            echo "Invalid Docker tag '${TAG}': must start with a letter, digit, or '_', and contain only letters, digits, '_', '.', '+', or '-'." >&2
+          if ! [[ "${TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]*$ ]]; then
+            echo "Invalid Docker tag '${TAG}': must start with a letter, digit, or '_', and contain only letters, digits, '_', '.', or '-'." >&2
             exit 1
           fi
 
