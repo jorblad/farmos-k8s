@@ -1,0 +1,106 @@
+name: Auto-release on PR label
+
+# Automatically creates a GitHub Release (and triggers the Docker build) when
+# a pull request with a release label is merged into the default branch.
+#
+# HOW TO USE
+# -----------
+# 1. Add one of the following labels to a pull request:
+#      release        – bumps the PATCH version  (v1.2.3 → v1.2.4)
+#      release:minor  – bumps the MINOR version  (v1.2.3 → v1.3.0)
+#      release:major  – bumps the MAJOR version  (v1.2.3 → v2.0.0)
+#
+# 2. Merge the pull request into the default branch.
+#
+# 3. This workflow will:
+#      a. Determine the next semantic version by inspecting existing tags.
+#      b. Create and push a new annotated Git tag.
+#      c. Publish a GitHub Release for that tag (which in turn triggers the
+#         Docker build in docker-image.yml via the `release: published` event).
+#
+# REQUIRED PERMISSIONS
+# ---------------------
+# The default GITHUB_TOKEN is used with `contents: write` so no extra secrets
+# are needed.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Only run when the PR was actually merged (not just closed/declined)
+    # and carries at least one of the recognised release labels.
+    if: |
+      github.event.pull_request.merged == true &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'release') ||
+        contains(github.event.pull_request.labels.*.name, 'release:minor') ||
+        contains(github.event.pull_request.labels.*.name, 'release:major')
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all tags
+        run: git fetch --tags origin
+
+      - name: Determine next version and create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # ── Determine bump type from labels ────────────────────────────────
+          BUMP="patch"
+          if echo "$PR_LABELS" | grep -q '"release:major"'; then
+            BUMP="major"
+          elif echo "$PR_LABELS" | grep -q '"release:minor"'; then
+            BUMP="minor"
+          fi
+          echo "Bump type: $BUMP"
+
+          # ── Find latest semver tag ─────────────────────────────────────────
+          LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1 || true)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+          fi
+          echo "Latest tag: $LATEST_TAG"
+
+          # ── Parse and bump ─────────────────────────────────────────────────
+          SEMVER="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$SEMVER"
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "New tag: $NEW_TAG"
+
+          # ── Create annotated tag ───────────────────────────────────────────
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG — triggered by PR #${PR_NUMBER}: ${PR_TITLE}"
+          git push origin "$NEW_TAG"
+
+          # ── Publish GitHub Release (triggers docker-image.yml) ─────────────
+          gh release create "$NEW_TAG" \
+            --title "Release $NEW_TAG" \
+            --notes "Automated release $NEW_TAG triggered by merging PR #${PR_NUMBER}: ${PR_TITLE}" \
+            --latest

@@ -2,31 +2,42 @@ name: Build and Push Docker Image
 
 # HOW TO TRIGGER A RELEASE / BUILD
 # ----------------------------------
-# This workflow runs only when a Git tag is pushed or a GitHub Release is
-# published.  It will NOT run when a branch is created (e.g. Renovate PRs).
+# This workflow builds and pushes the Docker image. It is designed to run
+# only when a real release is intended. Three supported paths:
 #
-# Option A – GitHub UI (recommended):
+# Option A – PR label (recommended, fully automated):
+#   Add the label "release" to a pull request before merging it.
+#   When the PR is merged, auto-release.yml creates a GitHub Release, which
+#   publishes a tag and triggers this workflow via the `release: published`
+#   event.  Use "release:minor" or "release:major" labels for non-patch bumps.
+#
+# Option B – GitHub UI (manual):
 #   1. Go to the repository → Releases → "Draft a new release".
 #   2. Choose "Create a new tag" and enter a version (e.g. v1.2.3).
 #   3. Fill in the release notes and click "Publish release".
 #   The workflow triggers via the `release: published` event and tags the
 #   Docker image with the release tag name.
 #
-# Option B – Git CLI:
+# Option C – Git CLI (manual):
 #   git tag v1.2.3
 #   git push origin v1.2.3
-#   The workflow triggers via the `create` event (ref_type == 'tag') and tags
-#   the Docker image with the pushed tag name.
+#   The workflow triggers via the `create` event (ref_type == 'tag').
 #
-# In both cases two Docker image tags are produced:
+# NOTE: The `create` event fires for both branch and tag creation. A workflow
+# run is started for every `create` event, but the `build` job is skipped for
+# branch creates via the job-level `if:` guard — only tag creates and
+# published releases produce a Docker image.
+#
+# In all cases two Docker image tags are produced:
 #   • jorblad/farmos-k8s:latest
 #   • jorblad/farmos-k8s:<version>   (e.g. jorblad/farmos-k8s:v1.2.3)
 
 on:
-  # Fires when a tag is pushed directly (git push origin v1.2.3).
-  # The job-level `if:` guard below ensures branch creates are skipped.
+  # Fires when a branch or tag is created, including direct tag pushes
+  # (git push origin v1.2.3). The job-level `if:` guard below ensures only
+  # tag creates are processed and branch creates are skipped.
   create:
-  # Fires when a GitHub Release is published via the UI.
+  # Fires when a GitHub Release is published via the UI or auto-release.yml.
   release:
     types: [published]
 
