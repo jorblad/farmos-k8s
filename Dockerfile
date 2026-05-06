@@ -67,7 +67,7 @@ RUN cd /var/farmOS && composer install --no-dev --prefer-dist --no-interaction
 
 # Set the version in farm.info.yml to match the version locked by Composer.
 USER root
-RUN sed -i "s|version: 4.0.0|version: $(jq -r '.packages[] | select(.name == "farmos/farmos").version' /var/farmOS/composer.lock)|g" /var/farmOS/web/profiles/farm/farm.info.yml || true
+RUN sed -i "s|version: 4.0.1|version: $(jq -r '.packages[] | select(.name == "farmos/farmos").version' /var/farmOS/composer.lock)|g" /var/farmOS/web/profiles/farm/farm.info.yml || true
 
 # Copy the farmOS codebase into /opt/drupal.
 RUN rm -rf /opt/drupal && cp -rp /var/farmOS /opt/drupal && chown -R www-data:www-data /opt/drupal
