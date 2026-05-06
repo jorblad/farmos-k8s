@@ -6,7 +6,7 @@ metadata:
 spec:
   instances: 2 # Number of PostgreSQL replicas
   enableSuperuserAccess: true
-  imageName: ghcr.io/cloudnative-pg/postgresql:16
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.9
   managed:
     roles:
     - name: farmos
