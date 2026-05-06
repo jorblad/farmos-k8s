@@ -21,8 +21,13 @@ spec:
             imagePullPolicy: IfNotPresent
             command: ["/bin/sh", "-c"]
             args:
-              - cd /opt/drupal/web && ./drupal_fix_permissions.sh -u=www-data || true; \
-                if command -v drush >/dev/null 2>&1; then drush cron; else php ./vendor/bin/drush cron || true; fi
+              - |
+                cd /opt/drupal/web && ./drupal_fix_permissions.sh -u=www-data || true
+                if command -v drush >/dev/null 2>&1; then
+                  drush cron
+                else
+                  php ./vendor/bin/drush cron || true
+                fi
             env:
             - name: DATABASE_URL
               valueFrom:
