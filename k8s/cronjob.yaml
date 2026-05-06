@@ -13,8 +13,6 @@ spec:
       template:
         spec:
           restartPolicy: OnFailure
-          securityContext:
-            fsGroup: 33
           containers:
           - name: drush-cron
             image: jorblad/farmos-k8s:v4.0.0.1
