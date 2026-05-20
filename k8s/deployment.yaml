@@ -54,10 +54,13 @@ spec:
           done
           
           echo "Database is reachable! Checking if farmOS is installed..."
-          # Use a more reliable check for installation
+          # Fix: Drupal 10/Drush expects 'pgsql' scheme, but CNPG provides 'postgresql' or 'postgres'
+          # This mismatch causes the "database_driver ... does not exist" error.
+          DRUPAL_DB_URL=$(echo "$DATABASE_URL" | sed 's/^\(postgres\|postgresql\):/pgsql:/')
+          
           if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"db_status": "Connected"'; then
             echo "farmOS not detected as installed. Attempting site-install..."
-            /opt/drupal/vendor/bin/drush site:install farm --db-url="$DATABASE_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install already completed or failed."
+            /opt/drupal/vendor/bin/drush site:install farm --db-url="$DRUPAL_DB_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install already completed or failed."
           else
              echo "farmOS is already installed. Running updates..."
              /opt/drupal/vendor/bin/drush updb --yes
