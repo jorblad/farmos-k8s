@@ -65,7 +65,7 @@ spec:
           # This mismatch causes the "database_driver ... does not exist" error.
           DRUPAL_DB_URL=$(echo "$DATABASE_URL" | sed 's/^\(postgres\|postgresql\):/pgsql:/')
           
-          if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"db_status": "Connected"'; then
+          if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"db-status": "Connected"'; then
             echo "farmOS not detected as installed. Attempting site-install..."
             /opt/drupal/vendor/bin/drush site:install farm --db-url="$DRUPAL_DB_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install already completed or failed."
           else
@@ -122,13 +122,13 @@ spec:
             cpu: "250m"
         startupProbe:
           httpGet:
-            path: /index.php/robothash/test
+            path: /user/login
             port: 80
           failureThreshold: 60 # ~10 minutes (60 * 10s)
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /index.php/robothash/test
+            path: /user/login
             port: 80
           initialDelaySeconds: 10
           periodSeconds: 10
