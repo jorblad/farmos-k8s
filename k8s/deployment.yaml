@@ -40,31 +40,7 @@ spec:
           # Inject database configuration if not already present
           if ! grep -q "DATABASE_URL" /opt/drupal/web/sites/default/settings.php; then
             echo "Injecting configuration into settings.php..."
-            cat <<'EOF' >> /opt/drupal/web/sites/default/settings.php
-          
-          // Injected by farmos-init
-          if (getenv('DATABASE_URL')) {
-            $db_url = parse_url(getenv('DATABASE_URL'));
-            $databases['default']['default'] = [
-              'database' => ltrim($db_url['path'], '/'),
-              'username' => $db_url['user'],
-              'password' => $db_url['pass'],
-              'prefix' => '',
-              'host' => $db_url['host'],
-              'port' => $db_url['port'] ?? 5432,
-              'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
-              'driver' => 'pgsql',
-            ];
-          }
-          
-          // Ensure the hash_salt is set for healthy probes
-          if (!isset($settings['hash_salt'])) {
-            $settings['hash_salt'] = 'farmos-k8s-salt-unsecure-change-me';
-          }
-          
-          // Trusted host patterns (allow all for internal K8s traffic)
-          $settings['trusted_host_patterns'] = ['.*'];
-          EOF
+            cat /config/settings-extra.php >> /opt/drupal/web/sites/default/settings.php
           fi
 
           chown -R www-data:www-data /opt/drupal/web/sites/default
@@ -127,6 +103,8 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
+        - mountPath: /config
+          name: farmos-settings-extra
       containers:
       - name: farmos
         image: jorblad/farmos-k8s:v4.0.0.1
@@ -144,13 +122,13 @@ spec:
             cpu: "250m"
         startupProbe:
           httpGet:
-            path: /robothash/test
+            path: /index.php/robothash/test
             port: 80
           failureThreshold: 60 # ~10 minutes (60 * 10s)
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /robothash/test
+            path: /index.php/robothash/test
             port: 80
           initialDelaySeconds: 10
           periodSeconds: 10
@@ -186,3 +164,6 @@ spec:
       - name: farmos-sites-volume
         persistentVolumeClaim:
           claimName: farmos-sites-pvc
+      - name: farmos-settings-extra
+        configMap:
+          name: farmos-settings-extra

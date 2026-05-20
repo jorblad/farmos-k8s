@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: farmos-settings-extra
+  namespace: farmos
+data:
+  settings-extra.php: |
+    // Injected by farmos-init
+    if (getenv('DATABASE_URL')) {
+      $db_url = parse_url(getenv('DATABASE_URL'));
+      $databases['default']['default'] = [
+        'database' => ltrim($db_url['path'], '/'),
+        'username' => $db_url['user'],
+        'password' => $db_url['pass'],
+        'prefix' => '',
+        'host' => $db_url['host'],
+        'port' => $db_url['port'] ?? 5432,
+        'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
+        'driver' => 'pgsql',
+      ];
+    }
+
+    if (!isset($settings['hash_salt'])) {
+      $settings['hash_salt'] = 'farmos-k8s-salt-unsecure-change-me';
+    }
+
+    $settings['trusted_host_patterns'] = ['.*'];
