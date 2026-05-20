@@ -37,16 +37,20 @@ spec:
           
           cd /opt/drupal/web
           
-          echo "Fixing permissions..."
+          echo "Fixing permissions (this might take a few minutes on first run)..."
           ./drupal_fix_permissions.sh -u=www-data
           
           echo "Waiting for database..."
-          until /opt/drupal/vendor/bin/drush sql:query "SELECT 1" > /dev/null 2>&1; do
-            echo "Database not ready (or not yet installed), waiting..."
-            sleep 5
-            # If we've waited a while and it's still not ready, maybe it needs install?
-            # But we'll just keep waiting for now to avoid accidental re-installs.
+          until php -r "try { \$pdo = new PDO('pgsql:host=$FARMOS_DB_HOST;port=5432;dbname=$FARMOS_DB_NAME', '$FARMOS_DB_USER', '$FARMOS_DB_PASSWORD'); exit(0); } catch (Exception \$e) { exit(1); }"; do
+            echo "Database at $FARMOS_DB_HOST is not reachable yet, waiting..."
+            sleep 10
           done
+          
+          echo "Database is reachable! Checking if farmOS is installed..."
+          if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"bootstrap": "Successful"'; then
+            echo "farmOS not installed. Attempting site-install..."
+            /opt/drupal/vendor/bin/drush site:install farm --db-url="$DATABASE_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install failed or already installed."
+          fi
           
           echo "Running database updates..."
           /opt/drupal/vendor/bin/drush updb --yes
@@ -78,6 +82,8 @@ spec:
               key: password
         - name: FARMOS_DB_HOST
           value: "farmos-db-rw"
+        - name: DRUSH_OPTIONS_URI
+          value: "http://farmos-svc"
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
@@ -131,6 +137,8 @@ spec:
               key: password
         - name: FARMOS_DB_HOST
           value: "farmos-db-rw"
+        - name: DRUSH_OPTIONS_URI
+          value: "http://farmos-svc"
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume

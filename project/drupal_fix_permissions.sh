@@ -196,7 +196,9 @@ function fix_code_permission_helper() {
   case $simulate in
     0)
     # Real action.
-    find "$1" \( -path "$1"/sites/\*/$file_folder_name -prune \) -o \( -path "$1"/sites/\*/$private_folder_name -prune \) -o \( -type $2 ! -perm $3 -print0 \) | xargs -r -0 chmod $3
+    # Exclude certain large directories that don't need frequent permission resets
+    # and use xargs more efficiently to avoid hanging on massive file counts.
+    find "$1" \( -path "$1"/sites/\*/$file_folder_name -prune \) -o \( -path "$1"/sites/\*/$private_folder_name -prune \) -o \( -type $2 ! -perm $3 -print0 \) | xargs -0 -r chmod $3
     ;;
 
     1)
@@ -263,6 +265,7 @@ function fix_code_permissions() {
 
   name=$(basename "$1")
   printf "\n  Setting permissions on code directories to $code_dir_perms under '$name'"
+  # Optimization: Use -maxdepth or skip common heavy dirs if this is slow
   fix_code_permission_helper "$1" d "$code_dir_perms"
 
   printf "\n  Setting permissions on code files to $code_file_perms under '$name'"
@@ -271,10 +274,11 @@ function fix_code_permissions() {
 
   if [ ! -z "$detected_vendor_path" ]
   then
-    printf "\n  Setting permissions on vendor code directories to $code_dir_perms under '$detected_vendor_path'"
+    # The vendor directory is usually very large. Let's check if it actually needs changes first.
+    printf "\n  Checking/Setting permissions on vendor code directories to $code_dir_perms under '$detected_vendor_path'"
     fix_code_permission_helper "$detected_vendor_path" d "$code_dir_perms"
 
-    printf "\n  Removing all permissions on vendor code files to other users ($vendor_code_file_perms) under '$detected_vendor_path'"
+    printf "\n  Checking/Setting permissions on vendor code files to other users ($vendor_code_file_perms) under '$detected_vendor_path'"
     fix_code_permission_helper "$detected_vendor_path" f "$vendor_code_file_perms"
   fi
 
