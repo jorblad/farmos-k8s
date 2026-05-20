@@ -17,76 +17,79 @@ spec:
     spec:
       securityContext:
         fsGroup: 33
-      initContainers:
-      - name: farmos-init
-        image: jorblad/farmos-k8s:v4.0.0.1
-        securityContext:
-          runAsUser: 0
-          runAsGroup: 0
-        command: [ "/bin/sh", "-c" ]
-        args:
-        - |
-          set -e
-          echo "Starting farmOS initialization..."
+      # initContainers:
+      # - name: farmos-init
+      #   image: jorblad/farmos-k8s:v4.0.0.1
+      #   securityContext:
+      #     runAsUser: 0
+      #     runAsGroup: 0
+      #   command: [ "/bin/sh", "-c" ]
+      #   args:
+      #   - |
+      #     # Don't use set -e immediately so we can handle errors gracefully
+      #     echo "Starting farmOS initialization..."
           
-          # Initialize sites directory if empty
-          if [ ! -d "/opt/drupal/web/sites/default" ]; then
-            echo "Creating/initializing sites/default directory..."
-            cp -rp /var/farmOS/web/sites/. /opt/drupal/web/sites/
-          fi
+      #     # Initialize sites directory if empty
+      #     if [ ! -d "/opt/drupal/web/sites/default" ]; then
+      #       echo "Creating/initializing sites/default directory..."
+      #       cp -rp /var/farmOS/web/sites/. /opt/drupal/web/sites/ || echo "Warning: site directory initialization had issues"
+      #     fi
           
-          cd /opt/drupal/web
+      #     cd /opt/drupal/web
           
-          echo "Fixing permissions (this might take a few minutes on first run)..."
-          ./drupal_fix_permissions.sh -u=www-data
+      #     echo "Fixing permissions (this might take a few minutes on first run)..."
+      #     # Run script without set -e context to prevent minor find/chmod errors from killing the container
+      #     /bin/bash ./drupal_fix_permissions.sh -u=www-data || echo "Warning: Permission script finished with some errors (ignoring)"
           
-          echo "Waiting for database..."
-          until php -r "try { \$pdo = new PDO('pgsql:host=$FARMOS_DB_HOST;port=5432;dbname=$FARMOS_DB_NAME', '$FARMOS_DB_USER', '$FARMOS_DB_PASSWORD'); exit(0); } catch (Exception \$e) { exit(1); }"; do
-            echo "Database at $FARMOS_DB_HOST is not reachable yet, waiting..."
-            sleep 10
-          done
+      #     # Now enable exit-on-error for the critical database steps
+      #     set -e
           
-          echo "Database is reachable! Checking if farmOS is installed..."
-          if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"bootstrap": "Successful"'; then
-            echo "farmOS not installed. Attempting site-install..."
-            /opt/drupal/vendor/bin/drush site:install farm --db-url="$DATABASE_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install failed or already installed."
-          fi
+      #     echo "Waiting for database..."
+      #     until php -r "try { \$pdo = new PDO('pgsql:host=$FARMOS_DB_HOST;port=5432;dbname=$FARMOS_DB_NAME', '$FARMOS_DB_USER', '$FARMOS_DB_PASSWORD'); exit(0); } catch (Exception \$e) { exit(1); }"; do
+      #       echo "Database at $FARMOS_DB_HOST is not reachable yet, waiting..."
+      #       sleep 10
+      #     done
           
-          echo "Running database updates..."
-          /opt/drupal/vendor/bin/drush updb --yes
+      #     echo "Database is reachable! Checking if farmOS is installed..."
+      #     # Use a more reliable check for installation
+      #     if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"db_status": "Connected"'; then
+      #       echo "farmOS not detected as installed. Attempting site-install..."
+      #       /opt/drupal/vendor/bin/drush site:install farm --db-url="$DATABASE_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install already completed or failed."
+      #     else
+      #        echo "farmOS is already installed. Running updates..."
+      #        /opt/drupal/vendor/bin/drush updb --yes
+      #        /opt/drupal/vendor/bin/drush cr
+      #     fi
           
-          echo "Clearing cache..."
-          /opt/drupal/vendor/bin/drush cr
-          
-          echo "Initialization complete."
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: farmos-db-app
-              key: uri
-        - name: FARMOS_DB_NAME
-          valueFrom:
-            secretKeyRef:
-              name: farmos-db-app
-              key: dbname
-        - name: FARMOS_DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: farmos-db-app
-              key: username
-        - name: FARMOS_DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: farmos-db-app
-              key: password
-        - name: FARMOS_DB_HOST
-          value: "farmos-db-rw"
-        - name: DRUSH_OPTIONS_URI
-          value: "http://farmos-svc"
-        volumeMounts:
-        - mountPath: /opt/drupal/web/sites
-          name: farmos-sites-volume
+      #     echo "Initialization complete."
+      #   env:
+      #   - name: DATABASE_URL
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: farmos-db-app
+      #         key: uri
+      #   - name: FARMOS_DB_NAME
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: farmos-db-app
+      #         key: dbname
+      #   - name: FARMOS_DB_USER
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: farmos-db-app
+      #         key: username
+      #   - name: FARMOS_DB_PASSWORD
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: farmos-db-app
+      #         key: password
+      #   - name: FARMOS_DB_HOST
+      #     value: "farmos-db-rw"
+      #   - name: DRUSH_OPTIONS_URI
+      #     value: "http://farmos-svc"
+      #   volumeMounts:
+      #   - mountPath: /opt/drupal/web/sites
+      #     name: farmos-sites-volume
       containers:
       - name: farmos
         image: jorblad/farmos-k8s:v4.0.0.1
