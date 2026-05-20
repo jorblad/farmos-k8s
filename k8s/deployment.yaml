@@ -39,23 +39,31 @@ spec:
           
           # Inject database configuration if not already present
           if ! grep -q "DATABASE_URL" /opt/drupal/web/sites/default/settings.php; then
-            echo "Injecting database configuration into settings.php..."
-            cat <<EOF >> /opt/drupal/web/sites/default/settings.php
-
+            echo "Injecting configuration into settings.php..."
+            cat <<'EOF' >> /opt/drupal/web/sites/default/settings.php
+          
           // Injected by farmos-init
           if (getenv('DATABASE_URL')) {
-            \$db_url = parse_url(getenv('DATABASE_URL'));
-            \$databases['default']['default'] = [
-              'database' => ltrim(\$db_url['path'], '/'),
-              'username' => \$db_url['user'],
-              'password' => \$db_url['pass'],
+            $db_url = parse_url(getenv('DATABASE_URL'));
+            $databases['default']['default'] = [
+              'database' => ltrim($db_url['path'], '/'),
+              'username' => $db_url['user'],
+              'password' => $db_url['pass'],
               'prefix' => '',
-              'host' => \$db_url['host'],
-              'port' => \$db_url['port'] ?? 5432,
+              'host' => $db_url['host'],
+              'port' => $db_url['port'] ?? 5432,
               'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
               'driver' => 'pgsql',
             ];
           }
+          
+          // Ensure the hash_salt is set for healthy probes
+          if (!isset($settings['hash_salt'])) {
+            $settings['hash_salt'] = 'farmos-k8s-salt-unsecure-change-me';
+          }
+          
+          // Trusted host patterns (allow all for internal K8s traffic)
+          $settings['trusted_host_patterns'] = ['.*'];
           EOF
           fi
 
@@ -136,13 +144,13 @@ spec:
             cpu: "250m"
         startupProbe:
           httpGet:
-            path: /
+            path: /robothash/test
             port: 80
-          failureThreshold: 30 # ~5 minutes (30 * 10s)
+          failureThreshold: 60 # ~10 minutes (60 * 10s)
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /
+            path: /robothash/test
             port: 80
           initialDelaySeconds: 10
           periodSeconds: 10
