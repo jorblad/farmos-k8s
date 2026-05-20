@@ -118,17 +118,17 @@ HELP
 #  0 if it is the root user.
 #  1 if it is not the root user.
 function is_root_user() {
-  [ $(id -u) == 0 ]
+  [ "$(id -u)" = "0" ]
 }
 
 
 # Determines if a user exists in the system.
 #
 # Returns:
-#  0 if it is the root user.
-#  1 if it is not the root user.
+#  0 if it is a valid user.
+#  1 if it is not a valid user.
 function is_valid_user() {
-  [ ! -z "$1" ] && [[ $(id -un "$1" 2> /dev/null) == "$1" ]]
+  [ -n "$1" ] && id "$1" > /dev/null 2>&1
 }
 
 
@@ -163,7 +163,7 @@ function fix_ownership() {
   case $simulate in
     0)
     # Real action.
-    find "$1" $detected_vendor_path \( ! -user $drupal_user -o ! -group $httpd_group \) \( -type f -o -type d \) -print0 | xargs -r -0 -L20 chown  $drupal_user:$httpd_group
+    find "$1" $detected_vendor_path \( ! -user $drupal_user -o ! -group $httpd_group \) \( -type f -o -type d \) -print0 | xargs -r -0 chown $drupal_user:$httpd_group
     ;;
 
     1)
@@ -196,7 +196,7 @@ function fix_code_permission_helper() {
   case $simulate in
     0)
     # Real action.
-    find "$1" \( -path "$1"/sites/\*/$file_folder_name -prune \) -o \( -path "$1"/sites/\*/$private_folder_name -prune \) -o \( -type $2 ! -perm $3 -print0 \) | xargs -r -0 -L4 chmod $3
+    find "$1" \( -path "$1"/sites/\*/$file_folder_name -prune \) -o \( -path "$1"/sites/\*/$private_folder_name -prune \) -o \( -type $2 ! -perm $3 -print0 \) | xargs -r -0 chmod $3
     ;;
 
     1)
@@ -229,7 +229,7 @@ function fix_content_permission_helper() {
   case $simulate in
     0)
     # Real action.
-    find "$1" -type $2 ! -perm $3 -print0 | xargs -r -0 -L20 chmod $3
+    find "$1" -type $2 ! -perm $3 -print0 | xargs -r -0 chmod $3
     ;;
 
     1)

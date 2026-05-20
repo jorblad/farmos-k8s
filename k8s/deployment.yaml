@@ -26,10 +26,35 @@ spec:
         command: [ "/bin/sh", "-c" ]
         args:
         - |
-          cd /opt/drupal/web && \
-          ./drupal_fix_permissions.sh -u=www-data && \
-          drush updb --yes && \
-          drush cr
+          set -e
+          echo "Starting farmOS initialization..."
+          
+          # Initialize sites directory if empty
+          if [ ! -d "/opt/drupal/web/sites/default" ]; then
+            echo "Creating/initializing sites/default directory..."
+            cp -rp /var/farmOS/web/sites/. /opt/drupal/web/sites/
+          fi
+          
+          cd /opt/drupal/web
+          
+          echo "Fixing permissions..."
+          ./drupal_fix_permissions.sh -u=www-data
+          
+          echo "Waiting for database..."
+          until /opt/drupal/vendor/bin/drush sql:query "SELECT 1" > /dev/null 2>&1; do
+            echo "Database not ready (or not yet installed), waiting..."
+            sleep 5
+            # If we've waited a while and it's still not ready, maybe it needs install?
+            # But we'll just keep waiting for now to avoid accidental re-installs.
+          done
+          
+          echo "Running database updates..."
+          /opt/drupal/vendor/bin/drush updb --yes
+          
+          echo "Clearing cache..."
+          /opt/drupal/vendor/bin/drush cr
+          
+          echo "Initialization complete."
         env:
         - name: DATABASE_URL
           valueFrom:
@@ -52,7 +77,7 @@ spec:
               name: farmos-db-app
               key: password
         - name: FARMOS_DB_HOST
-          value: "farmos-db"
+          value: "farmos-db-rw"
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
@@ -105,7 +130,7 @@ spec:
               name: farmos-db-app
               key: password
         - name: FARMOS_DB_HOST
-          value: "farmos-db"
+          value: "farmos-db-rw"
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
