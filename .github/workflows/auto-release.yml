@@ -5,6 +5,7 @@ name: Auto-release on PR label
 #
 # HOW TO USE
 # -----------
+# Option A (automatic on PR merge):
 # 1. Add one of the following labels to a pull request:
 #      release        – bumps the PATCH version  (v1.2.3 → v1.2.4)
 #      release:minor  – bumps the MINOR version  (v1.2.3 → v1.3.0)
@@ -17,6 +18,10 @@ name: Auto-release on PR label
 #      b. Create and push a new annotated Git tag.
 #      c. Publish a GitHub Release for that tag (which in turn triggers the
 #         Docker build in docker-image.yml via the `release: published` event).
+#
+# Option B (manual):
+# Run this workflow from the Actions tab via "Run workflow" and provide
+# `version` as an explicit semver tag (e.g. v1.2.3).
 #
 # IMPORTANT — SAME-REPO PRs ONLY
 # --------------------------------
@@ -33,6 +38,12 @@ name: Auto-release on PR label
 on:
   pull_request:
     types: [closed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Explicit release version (format: vMAJOR.MINOR.PATCH, e.g. v1.2.3)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -44,13 +55,16 @@ jobs:
     # fork — forks receive a read-only GITHUB_TOKEN), and carries at least one
     # of the recognised release labels.
     if: |
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == github.event.repository.default_branch &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event_name == 'workflow_dispatch' ||
       (
-        contains(github.event.pull_request.labels.*.name, 'release') ||
-        contains(github.event.pull_request.labels.*.name, 'release:minor') ||
-        contains(github.event.pull_request.labels.*.name, 'release:major')
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.base.ref == github.event.repository.default_branch &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        (
+          contains(github.event.pull_request.labels.*.name, 'release') ||
+          contains(github.event.pull_request.labels.*.name, 'release:minor') ||
+          contains(github.event.pull_request.labels.*.name, 'release:major')
+        )
       )
     runs-on: ubuntu-latest
     # Serialize all auto-release runs to prevent a race where two release-
@@ -68,7 +82,7 @@ jobs:
           # Check out the merge commit that actually landed on the default branch
           # so the release tag points to the right commit (works correctly with
           # squash and rebase merges as well as regular merges).
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merge_commit_sha || github.ref }}
           fetch-depth: 0
 
       - name: Fetch all tags
@@ -80,43 +94,54 @@ jobs:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          MANUAL_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
 
-          # ── Determine bump type from labels ────────────────────────────────
-          BUMP="patch"
-          if echo "$PR_LABELS" | grep -q '"release:major"'; then
-            BUMP="major"
-          elif echo "$PR_LABELS" | grep -q '"release:minor"'; then
-            BUMP="minor"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            NEW_TAG="$MANUAL_VERSION"
+            if ! echo "$NEW_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "Invalid manual version '$NEW_TAG'. Expected format: vMAJOR.MINOR.PATCH" >&2
+              exit 1
+            fi
+            echo "Manual release tag: $NEW_TAG"
+          else
+            # ── Determine bump type from labels ────────────────────────────────
+            BUMP="patch"
+            if echo "$PR_LABELS" | grep -q '"release:major"'; then
+              BUMP="major"
+            elif echo "$PR_LABELS" | grep -q '"release:minor"'; then
+              BUMP="minor"
+            fi
+            echo "Bump type: $BUMP"
+
+            # ── Find latest semver tag ─────────────────────────────────────────
+            # Use a strict regex so pre-release suffixes (e.g. v1.2.3-alpha) or
+            # extra dot-segments (e.g. v1.2.3.4) are excluded, preventing
+            # non-numeric PATCH values from breaking the arithmetic below.
+            LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -m1 -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+            if [ -z "$LATEST_TAG" ]; then
+              LATEST_TAG="v0.0.0"
+            fi
+            echo "Latest tag: $LATEST_TAG"
+
+            # ── Parse and bump ─────────────────────────────────────────────────
+            SEMVER="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$SEMVER"
+            MAJOR=${MAJOR:-0}
+            MINOR=${MINOR:-0}
+            PATCH=${PATCH:-0}
+
+            case "$BUMP" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
+
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+            echo "New tag: $NEW_TAG"
           fi
-          echo "Bump type: $BUMP"
-
-          # ── Find latest semver tag ─────────────────────────────────────────
-          # Use a strict regex so pre-release suffixes (e.g. v1.2.3-alpha) or
-          # extra dot-segments (e.g. v1.2.3.4) are excluded, preventing
-          # non-numeric PATCH values from breaking the arithmetic below.
-          LATEST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -m1 -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
-          if [ -z "$LATEST_TAG" ]; then
-            LATEST_TAG="v0.0.0"
-          fi
-          echo "Latest tag: $LATEST_TAG"
-
-          # ── Parse and bump ─────────────────────────────────────────────────
-          SEMVER="${LATEST_TAG#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$SEMVER"
-          MAJOR=${MAJOR:-0}
-          MINOR=${MINOR:-0}
-          PATCH=${PATCH:-0}
-
-          case "$BUMP" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-          esac
-
-          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
-          echo "New tag: $NEW_TAG"
 
           # ── Guard against races: abort if the tag already exists ───────────
           if git fetch origin "refs/tags/${NEW_TAG}" 2>/dev/null; then
@@ -131,7 +156,12 @@ jobs:
           git push origin "$NEW_TAG"
 
           # ── Publish GitHub Release (triggers docker-image.yml) ─────────────
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RELEASE_NOTES="Manual release $NEW_TAG triggered via workflow_dispatch."
+          else
+            RELEASE_NOTES="Automated release $NEW_TAG triggered by merging PR #${PR_NUMBER}: ${PR_TITLE}"
+          fi
           gh release create "$NEW_TAG" \
             --title "Release $NEW_TAG" \
-            --notes "Automated release $NEW_TAG triggered by merging PR #${PR_NUMBER}: ${PR_TITLE}" \
+            --notes "$RELEASE_NOTES" \
             --latest
