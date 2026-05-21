@@ -8,12 +8,13 @@ metadata:
 spec:
   instances: 2 # Number of PostgreSQL replicas
   enableSuperuserAccess: true
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.14
   # Use ImageCatalog major selection for controlled upgrades and stable image resolution.
-  imageCatalogRef:
-    apiGroup: postgresql.cnpg.io
-    kind: ImageCatalog
-    name: postgresql-farmos
-    major: 17
+  # imageCatalogRef:
+  #   apiGroup: postgresql.cnpg.io
+  #   kind: ImageCatalog
+  #   name: postgresql-farmos
+  #   major: 17
   managed:
     roles:
     - name: farmos
