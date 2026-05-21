@@ -6,7 +6,8 @@ metadata:
 spec:
   instances: 2 # Number of PostgreSQL replicas
   enableSuperuserAccess: true
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.3
+  # CNPG major upgrades must be done one major at a time (16 -> 17 -> 18).
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.3
   managed:
     roles:
     - name: farmos
