@@ -19,7 +19,7 @@ spec:
         fsGroup: 33
       initContainers:
       - name: farmos-init
-        image: jorblad/farmos-k8s:v4.0.0.1
+        image: jorblad/farmos-k8s:v4.0.8
         securityContext:
           runAsUser: 0
           runAsGroup: 0
@@ -28,7 +28,7 @@ spec:
         - |
           # Don't use set -e immediately so we can handle errors gracefully
           echo "Starting farmOS initialization..."
-          
+
           # Initialize sites directory if empty
           if [ ! -f "/opt/drupal/web/sites/default/settings.php" ]; then
             echo "Creating/initializing sites/default directory and settings files..."
@@ -36,7 +36,7 @@ spec:
             cp -rp /var/farmOS/web/sites/default/default.settings.php /opt/drupal/web/sites/default/default.settings.php || echo "Warning: default.settings.php copy failed"
             cp -rp /var/farmOS/web/sites/default/default.settings.php /opt/drupal/web/sites/default/settings.php || echo "Warning: settings.php creation failed"
           fi
-          
+
           # Inject database configuration if not already present
           if ! grep -q "DATABASE_URL" /opt/drupal/web/sites/default/settings.php; then
             echo "Injecting configuration into settings.php..."
@@ -44,27 +44,27 @@ spec:
           fi
 
           chown -R www-data:www-data /opt/drupal/web/sites/default
-          
+
           cd /opt/drupal/web
-          
+
           echo "Fixing permissions (this might take a few minutes on first run)..."
           # Run script without set -e context to prevent minor find/chmod errors from killing the container
           /bin/bash ./drupal_fix_permissions.sh -u=www-data || echo "Warning: Permission script finished with some errors (ignoring)"
-          
+
           # Now enable exit-on-error for the critical database steps
           set -e
-          
+
           echo "Waiting for database..."
           until php -r "try { \$pdo = new PDO('pgsql:host=$FARMOS_DB_HOST;port=5432;dbname=$FARMOS_DB_NAME', '$FARMOS_DB_USER', '$FARMOS_DB_PASSWORD'); exit(0); } catch (Exception \$e) { exit(1); }"; do
             echo "Database at $FARMOS_DB_HOST is not reachable yet, waiting..."
             sleep 10
           done
-          
+
           echo "Database is reachable! Checking if farmOS is installed..."
           # Fix: Drupal 10/Drush expects 'pgsql' scheme, but CNPG provides 'postgresql' or 'postgres'
           # This mismatch causes the "database_driver ... does not exist" error.
           DRUPAL_DB_URL=$(echo "$DATABASE_URL" | sed 's/^\(postgres\|postgresql\):/pgsql:/')
-          
+
           if ! /opt/drupal/vendor/bin/drush status --format=json | grep -q '"db-status": "Connected"'; then
             echo "farmOS not detected as installed. Attempting site-install..."
             /opt/drupal/vendor/bin/drush site:install farm --db-url="$DRUPAL_DB_URL" --site-name="farmOS" --account-name="admin" --account-pass="admin" --yes || echo "Site install already completed or failed."
@@ -73,7 +73,7 @@ spec:
              /opt/drupal/vendor/bin/drush updb --yes
              /opt/drupal/vendor/bin/drush cr
           fi
-          
+
           echo "Initialization complete."
         env:
         - name: DATABASE_URL
@@ -107,7 +107,7 @@ spec:
           name: farmos-settings-extra
       containers:
       - name: farmos
-        image: jorblad/farmos-k8s:v4.0.0.1
+        image: jorblad/farmos-k8s:v4.0.8
         securityContext:
           runAsUser: 33
           runAsGroup: 33
