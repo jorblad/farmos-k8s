@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ImageCatalog
+metadata:
+  name: postgresql-farmos
+  namespace: farmos
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  images:
+  - major: 16
+    image: ghcr.io/cloudnative-pg/postgresql:16.14-202605180814-system-trixie@sha256:a5da59cfcdbfcd4660fcc8aeb65a0628a89c508b22f36273ad1c55b2f5eb4253
+  - major: 17
+    image: ghcr.io/cloudnative-pg/postgresql:17.10-202605180839-system-trixie@sha256:d62554d207fdbcb9cbc5bf675ac1db3530ba084fa2ac27fce267fcb75d8b95c3
+  - major: 18
+    image: ghcr.io/cloudnative-pg/postgresql:18.4-202605180839-system-trixie@sha256:cf7a2f3d24b3fec275eb9965f69b0c69e57c0cc97c503410c63cbcaa7133a183
