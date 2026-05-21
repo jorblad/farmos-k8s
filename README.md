@@ -24,6 +24,17 @@ To build the Docker image, run the following command:
 docker build -t farmos-k8s .
 ```
 
+## Releasing (manual)
+
+To manually release and trigger build/push from GitHub Actions:
+
+1. Open **Actions** → **Auto-release on PR label**.
+2. Click **Run workflow**.
+3. Set `version` to an explicit semver tag (for example `v1.2.3`).
+
+This creates a Git tag + GitHub Release, which then triggers the Docker image
+workflow to build and push both `latest` and the provided version tag.
+
 ## Running the Docker Container
 ```sh
 docker run -p 80:80 farmos-k8s
