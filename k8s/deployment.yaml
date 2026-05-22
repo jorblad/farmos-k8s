@@ -43,7 +43,10 @@ spec:
             cat /config/settings-extra.php >> /opt/drupal/web/sites/default/settings.php
           fi
 
+          mkdir -p /opt/drupal/private
+
           chown -R www-data:www-data /opt/drupal/web/sites/default
+          chown -R www-data:www-data /opt/drupal/private
 
           cd /opt/drupal/web
 
@@ -103,6 +106,10 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
+          subPath: sites
+        - mountPath: /opt/drupal/private
+          name: farmos-sites-volume
+          subPath: private
         - mountPath: /config
           name: farmos-settings-extra
       containers:
@@ -160,6 +167,10 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
+          subPath: sites
+        - mountPath: /opt/drupal/private
+          name: farmos-sites-volume
+          subPath: private
       volumes:
       - name: farmos-sites-volume
         persistentVolumeClaim:
