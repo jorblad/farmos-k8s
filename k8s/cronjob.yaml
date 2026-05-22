@@ -52,6 +52,9 @@ spec:
             volumeMounts:
             - name: farmos-sites-volume
               mountPath: /opt/drupal/web/sites
+            - name: farmos-sites-volume
+              mountPath: /opt/drupal/private
+              subPath: private
           volumes:
           - name: farmos-sites-volume
             persistentVolumeClaim:

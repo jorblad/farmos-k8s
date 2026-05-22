@@ -46,7 +46,13 @@ spec:
           mkdir -p /opt/drupal/private
 
           chown -R www-data:www-data /opt/drupal/web/sites/default
-          chown -R www-data:www-data /opt/drupal/private
+          # Only chown private on first initialisation to avoid slow restarts on large volumes.
+          # Use && so the marker is only written after a successful chown.
+          if [ ! -f "/opt/drupal/private/.initialized" ]; then
+            chown -R www-data:www-data /opt/drupal/private && \
+              touch /opt/drupal/private/.initialized && \
+              chown www-data:www-data /opt/drupal/private/.initialized
+          fi
 
           cd /opt/drupal/web
 
@@ -106,7 +112,6 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
-          subPath: sites
         - mountPath: /opt/drupal/private
           name: farmos-sites-volume
           subPath: private
@@ -167,7 +172,6 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
-          subPath: sites
         - mountPath: /opt/drupal/private
           name: farmos-sites-volume
           subPath: private
