@@ -37,10 +37,10 @@ spec:
             cp -rp /var/farmOS/web/sites/default/default.settings.php /opt/drupal/web/sites/default/settings.php || echo "Warning: settings.php creation failed"
           fi
 
-          # Inject database configuration if not already present
-          if ! grep -q "DATABASE_URL" /opt/drupal/web/sites/default/settings.php; then
-            echo "Injecting configuration into settings.php..."
-            cat /config/settings-extra.php >> /opt/drupal/web/sites/default/settings.php
+          # Add a require for the ConfigMap-supplied settings so updates are always picked up.
+          if ! grep -q "settings-extra.php" /opt/drupal/web/sites/default/settings.php; then
+            echo "Adding require for settings-extra.php into settings.php..."
+            echo "require '/config/settings-extra.php';" >> /opt/drupal/web/sites/default/settings.php
           fi
 
           mkdir -p /opt/drupal/private
