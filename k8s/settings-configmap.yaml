@@ -38,12 +38,23 @@ data:
     // The scheme is determined after reverse proxy detection above.
     $scheme = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-    // Validate host to prevent header injection using PHP's built-in domain validator.
-    // Strip any port suffix before validating the hostname portion.
-    $hostname = preg_replace('/:\d+$/', '', $host);
-    // Strip IPv6 brackets (eg [2001:db8::1]) before IP validation, but keep
-    // the original $host (with brackets/port) for URL construction.
-    $ip_to_validate = preg_replace('/^\[(.+)\]$/', '$1', $hostname);
+    // Parse host for validation, handling three forms:
+    //   Bracketed IPv6:   [2001:db8::1] or [2001:db8::1]:8443
+    //   Unbracketed IPv6: 2001:db8::1   (multiple colons, no port)
+    //   Hostname/IPv4:    example.com or 192.0.2.1 or example.com:8080
+    if (preg_match('/^\[([^\]]+)\](:\d+)?$/', $host, $m)) {
+      // Bracketed IPv6 — strip brackets for IP validation; keep original $host for URL.
+      $hostname = '[' . $m[1] . ']';
+      $ip_to_validate = $m[1];
+    } elseif (substr_count($host, ':') > 1) {
+      // Unbracketed IPv6 — colons belong to the address, not a port suffix.
+      $hostname = $host;
+      $ip_to_validate = $host;
+    } else {
+      // Hostname or IPv4, optionally with a :port suffix.
+      $hostname = preg_replace('/:\d+$/', '', $host);
+      $ip_to_validate = $hostname;
+    }
     // Allow localhost, IP addresses (including IPv6), and valid FQDNs; reject everything else.
     $valid_host = $hostname === 'localhost'
       || filter_var($ip_to_validate, FILTER_VALIDATE_IP) !== false
