@@ -37,13 +37,22 @@ spec:
             cp -rp /var/farmOS/web/sites/default/default.settings.php /opt/drupal/web/sites/default/settings.php || echo "Warning: settings.php creation failed"
           fi
 
-          # Inject database configuration if not already present
-          if ! grep -q "DATABASE_URL" /opt/drupal/web/sites/default/settings.php; then
-            echo "Injecting configuration into settings.php..."
-            cat /config/settings-extra.php >> /opt/drupal/web/sites/default/settings.php
+          # Add a require for the ConfigMap-supplied settings so updates are always picked up.
+          if ! grep -Fq "require '/config/settings-extra.php';" /opt/drupal/web/sites/default/settings.php; then
+            echo "Adding require for settings-extra.php into settings.php..."
+            printf "\nrequire '/config/settings-extra.php';\n" >> /opt/drupal/web/sites/default/settings.php
           fi
 
+          mkdir -p /opt/drupal/private
+
           chown -R www-data:www-data /opt/drupal/web/sites/default
+          # Only chown private on first initialisation to avoid slow restarts on large volumes.
+          # Use && so the marker is only written after a successful chown.
+          if [ ! -f "/opt/drupal/private/.initialized" ]; then
+            chown -R www-data:www-data /opt/drupal/private && \
+              touch /opt/drupal/private/.initialized && \
+              chown www-data:www-data /opt/drupal/private/.initialized
+          fi
 
           cd /opt/drupal/web
 
@@ -103,6 +112,8 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
+        - mountPath: /opt/drupal/private
+          name: farmos-private-volume
         - mountPath: /config
           name: farmos-settings-extra
       containers:
@@ -160,10 +171,17 @@ spec:
         volumeMounts:
         - mountPath: /opt/drupal/web/sites
           name: farmos-sites-volume
+        - mountPath: /opt/drupal/private
+          name: farmos-private-volume
+        - mountPath: /config
+          name: farmos-settings-extra
       volumes:
       - name: farmos-sites-volume
         persistentVolumeClaim:
           claimName: farmos-sites-pvc
+      - name: farmos-private-volume
+        persistentVolumeClaim:
+          claimName: farmos-private-pvc
       - name: farmos-settings-extra
         configMap:
           name: farmos-settings-extra
