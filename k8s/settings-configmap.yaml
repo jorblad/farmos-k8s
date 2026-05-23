@@ -54,8 +54,11 @@ data:
       $ip_to_validate = $m[1];
     } elseif (substr_count($host, ':') > 1) {
       // Unbracketed IPv6 — colons belong to the address, not a port suffix.
+      // Keep the raw address for validation, but wrap in brackets for RFC 3986
+      // URL construction (e.g. https://[2001:db8::1]/sites/...).
       $hostname = $host;
       $ip_to_validate = $host;
+      $host = '[' . $host . ']';
     } else {
       // Hostname or IPv4, optionally with a :port suffix.
       $hostname = preg_replace('/:\d+$/', '', $host);
