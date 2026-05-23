@@ -41,9 +41,12 @@ data:
     // Validate host to prevent header injection using PHP's built-in domain validator.
     // Strip any port suffix before validating the hostname portion.
     $hostname = preg_replace('/:\d+$/', '', $host);
-    // Allow localhost, IP addresses, and valid FQDNs; reject everything else.
+    // Strip IPv6 brackets (eg [2001:db8::1]) before IP validation, but keep
+    // the original $host (with brackets/port) for URL construction.
+    $ip_to_validate = preg_replace('/^\[(.+)\]$/', '$1', $hostname);
+    // Allow localhost, IP addresses (including IPv6), and valid FQDNs; reject everything else.
     $valid_host = $hostname === 'localhost'
-      || filter_var($hostname, FILTER_VALIDATE_IP) !== false
+      || filter_var($ip_to_validate, FILTER_VALIDATE_IP) !== false
       || filter_var($hostname, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
     if (!$valid_host) {
       $host = 'localhost';

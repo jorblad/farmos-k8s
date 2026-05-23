@@ -55,7 +55,12 @@ spec:
             - name: farmos-sites-volume
               mountPath: /opt/drupal/private
               subPath: private
+            - name: farmos-settings-extra
+              mountPath: /config
           volumes:
           - name: farmos-sites-volume
             persistentVolumeClaim:
               claimName: farmos-sites-pvc
+          - name: farmos-settings-extra
+            configMap:
+              name: farmos-settings-extra
