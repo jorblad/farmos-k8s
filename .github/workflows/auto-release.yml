@@ -153,24 +153,39 @@ jobs:
             echo "New tag: $NEW_TAG"
           fi
 
-          # ── Guard against races: abort if the tag already exists ───────────
-          if git fetch origin "refs/tags/${NEW_TAG}" 2>/dev/null; then
-            echo "Tag ${NEW_TAG} already exists on the remote — skipping release to avoid a duplicate." >&2
-            exit 0
+          BASE_TAG="$NEW_TAG"
+          if git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
+            echo "Tag ${NEW_TAG} already exists."
+            SUFFIX=1
+            while git rev-parse -q --verify "refs/tags/${BASE_TAG}.${SUFFIX}" >/dev/null; do
+              SUFFIX=$((SUFFIX + 1))
+            done
+            NEW_TAG="${BASE_TAG}.${SUFFIX}"
+            echo "Using next available tag: ${NEW_TAG}"
           fi
 
-          # ── Create annotated tag ───────────────────────────────────────────
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            TAG_MESSAGE="Release $NEW_TAG — manual dispatch by ${ACTOR} from ${REF_NAME}"
+          if git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
+            # Tag already exists, so do not fail the run. Continue and create a
+            # release if one does not yet exist for this tag.
+            echo "Skipping tag creation because ${NEW_TAG} already exists."
           else
-            TAG_MESSAGE="Release $NEW_TAG — triggered by PR #${PR_NUMBER}: ${PR_TITLE}"
+            # ── Create annotated tag ─────────────────────────────────────────
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              TAG_MESSAGE="Release $NEW_TAG — manual dispatch by ${ACTOR} from ${REF_NAME}"
+            else
+              TAG_MESSAGE="Release $NEW_TAG — triggered by PR #${PR_NUMBER}: ${PR_TITLE}"
+            fi
+            git tag -a "$NEW_TAG" -m "$TAG_MESSAGE"
+            git push origin "$NEW_TAG"
           fi
-          git tag -a "$NEW_TAG" -m "$TAG_MESSAGE"
-          git push origin "$NEW_TAG"
 
           # ── Publish GitHub Release (triggers docker-image.yml) ─────────────
+          if gh release view "$NEW_TAG" >/dev/null 2>&1; then
+            echo "Release ${NEW_TAG} already exists — skipping release creation."
+            exit 0
+          fi
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             RELEASE_NOTES="Manual release $NEW_TAG triggered via workflow_dispatch."
           else
