@@ -154,22 +154,21 @@ jobs:
           fi
 
           BASE_TAG="$NEW_TAG"
-          TAG_ALREADY_EXISTS=false
-          if git fetch origin "refs/tags/${NEW_TAG}" 2>/dev/null; then
-            TAG_ALREADY_EXISTS=true
-            echo "Tag ${NEW_TAG} already exists on the remote."
-          fi
-
-          if [ "$TAG_ALREADY_EXISTS" = "true" ]; then
+          if git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
+            echo "Tag ${NEW_TAG} already exists."
             SUFFIX=1
-            while git fetch origin "refs/tags/${BASE_TAG}.${SUFFIX}" 2>/dev/null; do
+            while git rev-parse -q --verify "refs/tags/${BASE_TAG}.${SUFFIX}" >/dev/null; do
               SUFFIX=$((SUFFIX + 1))
             done
             NEW_TAG="${BASE_TAG}.${SUFFIX}"
             echo "Using next available tag: ${NEW_TAG}"
           fi
 
-          if [ "$TAG_ALREADY_EXISTS" = "false" ] || [ "$NEW_TAG" != "$BASE_TAG" ]; then
+          if git rev-parse -q --verify "refs/tags/${NEW_TAG}" >/dev/null; then
+            # Tag already exists, so do not fail the run. Continue and create a
+            # release if one does not yet exist for this tag.
+            echo "Skipping tag creation because ${NEW_TAG} already exists."
+          else
             # ── Create annotated tag ─────────────────────────────────────────
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -180,10 +179,6 @@ jobs:
             fi
             git tag -a "$NEW_TAG" -m "$TAG_MESSAGE"
             git push origin "$NEW_TAG"
-          else
-            # Tag already exists, so do not fail the run. Continue and create a
-            # release if one does not yet exist for this tag.
-            echo "Skipping tag creation because ${NEW_TAG} already exists."
           fi
 
           # ── Publish GitHub Release (triggers docker-image.yml) ─────────────
