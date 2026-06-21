@@ -19,7 +19,7 @@ spec:
         fsGroup: 33
       initContainers:
       - name: farmos-init
-        image: jorblad/farmos-k8s:v4.0.8
+        image: jorblad/farmos-k8s:v4.0.3.1
         securityContext:
           runAsUser: 0
           runAsGroup: 0
@@ -118,7 +118,7 @@ spec:
           name: farmos-settings-extra
       containers:
       - name: farmos
-        image: jorblad/farmos-k8s:v4.0.8
+        image: jorblad/farmos-k8s:v4.0.3.1
         securityContext:
           runAsUser: 33
           runAsGroup: 33
