@@ -55,19 +55,25 @@ jobs:
     # Only run for tag creation, published releases, or explicit dispatches —
     # skip branch creates (e.g. Renovate branches) to avoid invalid Docker tag
     # errors.
-    if: github.ref_type == 'tag' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: |
+      (
+        github.event_name == 'workflow_dispatch' &&
+        inputs.tag != ''
+      ) ||
+      github.ref_type == 'tag' ||
+      github.event_name == 'release'
     # Prevent duplicate builds when both `create` (tag push) and
     # `release: published` fire for the same version.  The later-arriving
     # run cancels the earlier one.
     concurrency:
-      group: docker-image-${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
+      group: docker-image-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name || github.ref_name }}
       cancel-in-progress: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag || github.event.release.tag_name || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name || github.ref }}
 
       # The project dependencies are installed inside the Docker image build
       # (the base image provides the required PHP version and extensions).

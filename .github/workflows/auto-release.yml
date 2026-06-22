@@ -45,10 +45,6 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  actions: write
-
 jobs:
   release:
     # Only run when the PR was actually merged (not just closed/declined),
@@ -71,6 +67,9 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     # Serialize all auto-release runs to prevent a race where two release-
     # labelled PRs merged in quick succession compute the same NEW_TAG from
     # the same LATEST_TAG.  Setting cancel-in-progress: false ensures both
@@ -201,5 +200,6 @@ jobs:
           # `create`/`release` workflows, so dispatch the Docker workflow
           # explicitly with the resolved release tag.
           gh workflow run docker-image.yml \
-            --ref "$DEFAULT_BRANCH" \
+            --ref "$NEW_TAG" \
             -f tag="$NEW_TAG"
+          echo "Dispatched docker-image.yml for tag ${NEW_TAG}."
