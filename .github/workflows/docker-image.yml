@@ -7,9 +7,9 @@ name: Build and Push Docker Image
 #
 # Option A – PR label (recommended, fully automated):
 #   Add the label "release" to a pull request before merging it.
-#   When the PR is merged, auto-release.yml creates a GitHub Release, which
-#   publishes a tag and triggers this workflow via the `release: published`
-#   event.  Use "release:minor" or "release:major" labels for non-patch bumps.
+#   When the PR is merged, auto-release.yml creates a GitHub Release and then
+#   dispatches this workflow with the resolved release tag. Use
+#   "release:minor" or "release:major" labels for non-patch bumps.
 #
 # Option B – GitHub UI (manual):
 #   1. Go to the repository → Releases → "Draft a new release".
@@ -25,8 +25,8 @@ name: Build and Push Docker Image
 #
 # NOTE: The `create` event fires for both branch and tag creation. A workflow
 # run is started for every `create` event, but the `build` job is skipped for
-# branch creates via the job-level `if:` guard — only tag creates and
-# published releases produce a Docker image.
+# branch creates via the job-level `if:` guard — only tag creates, published
+# releases, and explicit dispatches produce a Docker image.
 #
 # In all cases two Docker image tags are produced:
 #   • jorblad/farmos-k8s:latest
@@ -40,23 +40,40 @@ on:
   # Fires when a GitHub Release is published via the UI or auto-release.yml.
   release:
     types: [published]
+  # Allows auto-release.yml to explicitly start the Docker publish workflow for
+  # tags/releases it creates with GITHUB_TOKEN.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Docker image tag to publish"
+        required: true
+        type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Only run for tag creation or published releases — skip branch creates
-    # (e.g. Renovate branches) to avoid invalid Docker tag errors.
-    if: github.ref_type == 'tag' || github.event_name == 'release'
+    # Only run for tag creation, published releases, or explicit dispatches —
+    # skip branch creates (e.g. Renovate branches) to avoid invalid Docker tag
+    # errors.
+    if: |
+      (
+        github.event_name == 'workflow_dispatch' &&
+        inputs.tag != ''
+      ) ||
+      github.ref_type == 'tag' ||
+      github.event_name == 'release'
     # Prevent duplicate builds when both `create` (tag push) and
     # `release: published` fire for the same version.  The later-arriving
     # run cancels the earlier one.
     concurrency:
-      group: docker-image-${{ github.ref_name }}
+      group: docker-image-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name || github.ref_name }}
       cancel-in-progress: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name || github.ref }}
 
       # The project dependencies are installed inside the Docker image build
       # (the base image provides the required PHP version and extensions).
@@ -74,9 +91,12 @@ jobs:
       - name: Extract version tag
         id: extract_version
         env:
+          DISPATCH_TAG: ${{ inputs.tag }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+          if [ -n "${DISPATCH_TAG}" ]; then
+            TAG="${DISPATCH_TAG}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
           elif [ -n "${RELEASE_TAG}" ]; then
             TAG="${RELEASE_TAG}"

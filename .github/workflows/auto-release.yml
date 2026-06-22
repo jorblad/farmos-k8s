@@ -16,8 +16,8 @@ name: Auto-release on PR label
 # 3. This workflow will:
 #      a. Determine the next semantic version by inspecting existing tags.
 #      b. Create and push a new annotated Git tag.
-#      c. Publish a GitHub Release for that tag (which in turn triggers the
-#         Docker build in docker-image.yml via the `release: published` event).
+#      c. Publish a GitHub Release for that tag and explicitly dispatch the
+#         Docker build in docker-image.yml for the resolved release tag.
 #
 # Option B (manual):
 # Run this workflow from the Actions tab via "Run workflow" and provide
@@ -45,9 +45,6 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-
 jobs:
   release:
     # Only run when the PR was actually merged (not just closed/declined),
@@ -70,6 +67,9 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     # Serialize all auto-release runs to prevent a race where two release-
     # labelled PRs merged in quick succession compute the same NEW_TAG from
     # the same LATEST_TAG.  Setting cancel-in-progress: false ensures both
@@ -181,17 +181,25 @@ jobs:
             git push origin "$NEW_TAG"
           fi
 
-          # ── Publish GitHub Release (triggers docker-image.yml) ─────────────
+          # ── Publish GitHub Release ──────────────────────────────────────────
           if gh release view "$NEW_TAG" >/dev/null 2>&1; then
             echo "Release ${NEW_TAG} already exists — skipping release creation."
-            exit 0
-          fi
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            RELEASE_NOTES="Manual release $NEW_TAG triggered via workflow_dispatch."
           else
-            RELEASE_NOTES="Automated release $NEW_TAG triggered by merging PR #${PR_NUMBER}: ${PR_TITLE}"
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              RELEASE_NOTES="Manual release $NEW_TAG triggered via workflow_dispatch."
+            else
+              RELEASE_NOTES="Automated release $NEW_TAG triggered by merging PR #${PR_NUMBER}: ${PR_TITLE}"
+            fi
+            gh release create "$NEW_TAG" \
+              --title "Release $NEW_TAG" \
+              --notes "$RELEASE_NOTES" \
+              --latest
           fi
-          gh release create "$NEW_TAG" \
-            --title "Release $NEW_TAG" \
-            --notes "$RELEASE_NOTES" \
-            --latest
+
+          # Tags/releases created with GITHUB_TOKEN do not trigger downstream
+          # `create`/`release` workflows, so dispatch the Docker workflow
+          # explicitly with the resolved release tag.
+          gh workflow run docker-image.yml \
+            --ref "$NEW_TAG" \
+            -f tag="$NEW_TAG"
+          echo "Dispatched docker-image.yml for tag ${NEW_TAG}."

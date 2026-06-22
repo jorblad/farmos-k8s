@@ -32,7 +32,7 @@ To manually release and trigger build/push from GitHub Actions:
 2. Click **Run workflow**.
 3. Set `version` to an explicit semver tag (for example `v1.2.3`). If that tag already exists, the workflow will create the next available 4-part tag (for example `v1.2.3.1`).
 
-This creates a Git tag + GitHub Release, which then triggers the Docker image
+This creates a Git tag + GitHub Release and then dispatches the Docker image
 workflow to build and push both `latest` and the provided version tag.
 
 ## Running the Docker Container
