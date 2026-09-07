@@ -11,6 +11,7 @@ spec:
     barmanObjectStore:
       destinationPath: "s3://cnpg/"
       endpointURL: "http://192.168.210.30:30189"
+      s3PathStyle: true
       s3Credentials:
         accessKeyId:
           name: garage-s3-creds
