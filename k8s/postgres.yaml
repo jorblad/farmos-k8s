@@ -10,7 +10,7 @@ spec:
   backup:
     barmanObjectStore:
       destinationPath: "s3://cnpg/farmos-db/"
-      endpointURL: "http://192.168.210.30:30189"
+      endpointURL: "http://192.168.210.30:30188"
       s3Credentials:
         accessKeyId:
           name: garage-s3-creds
