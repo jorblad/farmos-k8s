@@ -7,6 +7,20 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   instances: 2 # Number of PostgreSQL replicas
+  backup:
+    barmanObjectStore:
+      destinationPath: "s3://cnpg@garage/"
+      endpointURL: "http://192.168.210.30:30189"
+      s3Credentials:
+        accessKeyId:
+          name: garage-s3-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: garage-s3-creds
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+        maxParallel: 2
   enableSuperuserAccess: true
   imageName: ghcr.io/cloudnative-pg/postgresql:16.13
   # Use ImageCatalog major selection for controlled upgrades and stable image resolution.
