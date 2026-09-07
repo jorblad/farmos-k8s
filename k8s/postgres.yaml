@@ -58,3 +58,13 @@ spec:
   monitoring:
     enablePodMonitor: true
   primaryUpdateStrategy: unsupervised
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: farmos-db-daily-backup
+  namespace: farmos
+spec:
+  schedule: "0 0 2 * * *" # Daily at 2:00 AM
+  cluster:
+    name: farmos-db
