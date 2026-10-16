@@ -24,8 +24,6 @@ spec:
       wal:
         compression: gzip
         maxParallel: 2
-    plugins:
-    - name: barman-cloud.cnpg.io
   env:
   - name: AWS_REQUEST_CHECKSUM_CALCULATION
     value: when_required
