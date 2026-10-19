@@ -54,8 +54,8 @@ spec:
   - name: AWS_RESPONSE_CHECKSUM_VALIDATION
     value: when_required
   enableSuperuserAccess: true
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.6
-  # imageName: ghcr.io/cloudnative-pg/postgresql:16.13
+  # imageName: ghcr.io/cloudnative-pg/postgresql:18.6
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.13
   # Use ImageCatalog major selection for controlled upgrades and stable image resolution.
   # imageCatalogRef:
   #   apiGroup: postgresql.cnpg.io
