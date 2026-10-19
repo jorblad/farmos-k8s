@@ -10,7 +10,7 @@ spec:
   # Bootstrap by recovering from your existing S3 object store backup
   bootstrap:
     recovery:
-      source: barmanObjectStore
+      source: S3-backup
 
   # 2. Define the external cluster connection parameters used for recovery
   externalClusters:
