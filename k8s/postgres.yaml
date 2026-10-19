@@ -11,6 +11,26 @@ spec:
   bootstrap:
     recovery:
       source: barmanObjectStore
+
+  # 2. Define the external cluster connection parameters used for recovery
+  externalClusters:
+  - name: S3-backup
+    barmanObjectStore:
+      destinationPath: "s3://cnpg/farmos-db/"
+      endpointURL: "http://192.168.210.30:30188"
+      s3Credentials:
+        accessKeyId:
+          name: garage-s3-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: garage-s3-creds
+          key: ACCESS_SECRET_KEY
+        region:
+          name: garage-s3-creds
+          key: AWS_REGION
+      wal:
+        compression: gzip
+        maxParallel: 2
   backup:
     barmanObjectStore:
       destinationPath: "s3://cnpg/farmos-db/"
