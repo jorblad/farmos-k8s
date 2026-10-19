@@ -6,15 +6,17 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
-  instances: 2 # Number of PostgreSQL replicas
-  # Bootstrap by recovering from your existing S3 object store backup
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6
+
+  # Bootstrap recovery referencing the corrected external cluster name
   bootstrap:
     recovery:
-      source: S3-backup
+      source: farmos-db
 
-  # 2. Define the external cluster connection parameters used for recovery
+  # Match the external cluster name to the original server name in S3
   externalClusters:
-  - name: S3-backup
+  - name: farmos-db
     barmanObjectStore:
       destinationPath: "s3://cnpg/farmos-db/"
       endpointURL: "http://192.168.210.30:30188"
@@ -31,6 +33,7 @@ spec:
       wal:
         compression: gzip
         maxParallel: 2
+
   backup:
     barmanObjectStore:
       destinationPath: "s3://cnpg/farmos-db-v18/"
@@ -42,36 +45,27 @@ spec:
         secretAccessKey:
           name: garage-s3-creds
           key: ACCESS_SECRET_KEY
-        region:
-          name: garage-s3-creds
-          key: AWS_REGION
+          region:
+            name: garage-s3-creds
+            key: AWS_REGION
       wal:
         compression: gzip
         maxParallel: 2
+
   env:
   - name: AWS_REQUEST_CHECKSUM_CALCULATION
     value: when_required
   - name: AWS_RESPONSE_CHECKSUM_VALIDATION
     value: when_required
   enableSuperuserAccess: true
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.6
-  # imageName: ghcr.io/cloudnative-pg/postgresql:16.13
-  # Use ImageCatalog major selection for controlled upgrades and stable image resolution.
-  # imageCatalogRef:
-  #   apiGroup: postgresql.cnpg.io
-  #   kind: ImageCatalog
-  #   name: postgresql-farmos
-  #   major: 17
   managed:
     roles:
     - name: farmos
       superuser: true
       login: true
-
     - name: app
       superuser: true
       login: true
-
   storage:
     pvcTemplate:
       accessModes:
@@ -90,6 +84,6 @@ metadata:
   name: farmos-db-daily-backup
   namespace: farmos
 spec:
-  schedule: "0 0 2 * * *" # Daily at 2:00 AM
+  schedule: "0 0 2 * * *"
   cluster:
     name: farmos-db
