@@ -33,7 +33,7 @@ spec:
         maxParallel: 2
   backup:
     barmanObjectStore:
-      destinationPath: "s3://cnpg/farmos-db/"
+      destinationPath: "s3://cnpg/farmos-db-v18/"
       endpointURL: "http://192.168.210.30:30188"
       s3Credentials:
         accessKeyId:
