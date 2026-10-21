@@ -1,6 +1,6 @@
 # Inherit from the upsteam farmOS 3.x image.
 # Upgrade here for new farmos version
-FROM farmos/farmos:4.0.8
+FROM farmos/farmos:4.0.9
 
 # Switch to root for package installation and filesystem ops.
 USER root
