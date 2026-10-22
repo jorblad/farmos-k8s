@@ -61,6 +61,9 @@ RUN chmod +x /var/farmOS/web/drupal_fix_permissions.sh && chown www-data:www-dat
 # Ensure ownership and permissions so `www-data` can write into /var/farmOS
 RUN chown -R www-data:www-data /var/farmOS && chmod -R ug+rwX,o+rX /var/farmOS
 
+# Composer stores its cache under /var/www/.composer for www-data.
+RUN install -d -o www-data -g www-data /var/www/.composer
+
 # Install PHP dependencies inside the image as www-data.
 USER www-data
 RUN cd /var/farmOS && composer install --no-dev --prefer-dist --no-interaction
